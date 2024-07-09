@@ -1,34 +1,16 @@
+
 import Foundation
 
 public class MMDB {
-    private let fileStream: FileStream
-    let metadata: Metadata
+    private let databaseData: Data
+    private let metadata: Metadata
     private let decoder: Decoder
     private(set) lazy var ipv4Root: UInt = computeIPv4Root()
     
-    /// Initializes a database from an url.
-    /// - Parameter url: The url at which the database file is located.
-    public convenience init(from url: URL) throws {
-        guard let data = try? Data(contentsOf: url) else {
-            throw MMDBError.notFound(url.absoluteString)
-        }
-        try self.init(data: data)
-    }
-    
-    /// Initializes a database from data.
-    /// - Parameter data: The data representing the MMDB.
-    public init(data: Data) throws {
-        self.fileStream = FileStream(data: data)
-        
-        var metadataStart = try fileStream.findMetadataStart()
-        self.decoder = Decoder(fileStream: self.fileStream)
-        guard case let .map(metadataMap) = try decoder.decode(&metadataStart, startingAt: metadataStart) else {
-            throw MMDBError.metadataError("Could not decode metadata")
-        }
-        self.metadata = try Metadata(metadataMap)
-        if metadata.searchTreeSize > metadataStart {
-            throw MMDBError.corruptDatabase("Invalid node count")
-        }
+    public init(from data: Data) throws {
+        self.databaseData = data
+        self.metadata = try Metadata(databaseData)
+        self.decoder = Decoder(data: databaseData)
     }
     
     public enum SearchResult {
@@ -228,16 +210,16 @@ public class MMDB {
     func node6(_ number: UInt, side: UInt) throws -> UInt {
         let bytesToRead = 3
         let base = side == 0 ? Int(number * 6) : Int(number * 6) + bytesToRead
-        return UInt(Decoder.decodeUInt32(from: try fileStream.read(from: base, numberOfBytes: bytesToRead)))
+        return UInt(Decoder.decodeUInt32(from: databaseData[base..<bytesToRead]))
     }
     
     func node7(_ number: UInt, side: UInt) throws -> UInt {
         let bytesToRead = 3
         var base = Int(number * 7)
-        let middle = fileStream[base + bytesToRead]
+        let middle = databaseData[base + bytesToRead]
         base += side == 0 ? 0 : bytesToRead + 1
         let relevantMiddleBits = side == 0 ? middle >> 4 : middle & 0x0f
-        var bytes = try fileStream.read(from: base, numberOfBytes: bytesToRead)
+        var bytes = databaseData[base..<base+bytesToRead]
         bytes.insert(relevantMiddleBits, at: bytes.indices.startIndex)
         return (UInt(Decoder.decodeUInt32(from: bytes)))
     }
@@ -245,6 +227,6 @@ public class MMDB {
     func node8(_ number: UInt, side: UInt) throws -> UInt {
         let bytesToRead = 4
         let base = side == 0 ? Int(number * 8) : Int(number * 8) + bytesToRead
-        return UInt(Decoder.decodeUInt32(from: try fileStream.read(from: base, numberOfBytes: bytesToRead)))
+        return UInt(Decoder.decodeUInt32(from: databaseData[base..<base+bytesToRead]))
     }
 }

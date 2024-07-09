@@ -1,9 +1,9 @@
 import Foundation
 
-/// Used for decoding data from a file stream.
+/// Used for decoding data from a database file.
 public struct Decoder {
-    /// The file stream consisting of the MMDB database file.
-    var fileStream: FileStream
+    /// The memory mapped Data object pointing to the MMDB database file.
+    var data: Data
     
     /// The data field type tag read from the MMDB file as given in *MaxMind DB File Format Specification 2.0*
     enum FieldType: UInt8 {
@@ -83,15 +83,13 @@ public struct Decoder {
         }
     }
     
-    init(fileStream: FileStream) {
-        self.fileStream = fileStream
+    init(data: Data) {
+        self.data = data
     }
     
     func decode(_ offset: inout Int, startingAt pointerBase: Int) throws -> Value {
-        guard fileStream.indices.contains(offset) else {
-            throw MMDBError.indexOutOfRange
-        }
-        let controlByte = fileStream[offset]
+        
+        let controlByte = data[offset]
         offset += 1
         let fieldTypeValue = controlByte >> 5
         guard var type = FieldType(rawValue: fieldTypeValue) else {
@@ -104,7 +102,7 @@ public struct Decoder {
         }
         
         if type == .extended {
-            let extendedFieldTypeValue = fileStream[offset] + 7
+            let extendedFieldTypeValue = data[offset] + 7
             
             guard extendedFieldTypeValue >= 8 else {
                 throw MMDBError.invalidFieldType(extendedFieldTypeValue)
@@ -123,7 +121,7 @@ public struct Decoder {
     func sizeFromControlByte(controlByte: UInt8, offset: inout Int) throws -> Int {
         var size: Int = Int(controlByte) & 0x1f
         let bytesToRead = size < 29 ? 0 : size - 28
-        let bytes = try fileStream.read(from: offset, numberOfBytes: Int(bytesToRead))
+        let bytes = data[offset..<offset+bytesToRead]
         let decoded = Int(Self.decodeUInt32(from: bytes))
         
         if size == 29 {
@@ -138,7 +136,7 @@ public struct Decoder {
     }
     
     func decode(_ type: FieldType, from offset: inout Int, startingAt pointerBase: Int, with size: Int) throws -> Value {
-        let bytes = try fileStream.read(from: offset, numberOfBytes: size)
+        let bytes = data[offset..<offset+size]
         
         switch type {
         case .map:
@@ -180,11 +178,11 @@ public struct Decoder {
     
     func decodePointer(from controlByte: UInt8, with pointerBase: Int, at offset: inout Int) throws -> Int {
         let pointerSize = Int((controlByte >> 3) & 0x3)
-        let buffer = try fileStream.read(from: offset, numberOfBytes: pointerSize + 1)
+        let buffer = data[offset..<offset+pointerSize+1]
         offset += pointerSize + 1
         let pointerOffsets = [0, 2048, 526336, 0]
         
-        let packed: ArraySlice<UInt8>
+        let packed: Data
         if pointerSize == 3 {
             packed = buffer
         } else {
@@ -196,25 +194,25 @@ public struct Decoder {
         return value
     }
     
-    static func decodeString(from bytes: ArraySlice<UInt8>) throws -> String {
+    static func decodeString(from bytes: Data) throws -> String {
         guard let string = String(bytes: bytes, encoding: .utf8) else {
             throw MMDBError.decodingError("Could not decode string from bytes: \(bytes)")
         }
         return string
     }
     
-    static func decodeDouble(from bytes: ArraySlice<UInt8>) throws -> Double {
+    static func decodeDouble(from bytes: Data) throws -> Double {
         guard bytes.count == 8 else {
             throw MMDBError.decodingError("Could not deocde double from bytes: \(bytes)")
         }
         return Double(bitPattern: decodeUInt64(from: bytes))
     }
     
-    static func decodeUInt16(from bytes: ArraySlice<UInt8>) -> UInt16 {
+    static func decodeUInt16(from bytes: Data) -> UInt16 {
         bytes.reduce(0) { ($0 << 8) | UInt16($1) }
     }
     
-    static func decodeUInt32(from bytes: ArraySlice<UInt8>) -> UInt32 {
+    static func decodeUInt32(from bytes: Data) -> UInt32 {
         bytes.reduce(0) { ($0 << 8) | UInt32($1) }
     }
     
@@ -230,15 +228,15 @@ public struct Decoder {
         return map
     }
     
-    static func decodeInt32(from bytes: ArraySlice<UInt8>) -> Int32 {
+    static func decodeInt32(from bytes: Data) -> Int32 {
         Int32(bitPattern: decodeUInt32(from: bytes))
     }
     
-    static func decodeUInt64(from bytes: ArraySlice<UInt8>) -> UInt64 {
+    static func decodeUInt64(from bytes: Data) -> UInt64 {
         bytes.reduce(0) { ($0 << 8) | UInt64($1) }
     }
     
-    static func decodeUInt128(from bytes: ArraySlice<UInt8>) -> (high: UInt64, low: UInt64) {
+    static func decodeUInt128(from bytes: Data) -> (high: UInt64, low: UInt64) {
         var b = Array(bytes)
         if bytes.count < 16 {
             b = Array(repeating: 0, count: 16 - bytes.count) + b
@@ -261,7 +259,7 @@ public struct Decoder {
         size != 0
     }
     
-    static func decodeFloat(from bytes: ArraySlice<UInt8>) throws -> Float {
+    static func decodeFloat(from bytes: Data) throws -> Float {
         guard bytes.count == 4 else {
             throw MMDBError.decodingError("Could not deocde float from bytes: \(bytes)")
         }
