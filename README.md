@@ -1,35 +1,14 @@
 # Swift MMDB
 
 A native swift library for reading MMDB files, which include GeoLite2 files 
-for mapping IP addresses to countries or cities.
-
-## How can you use this?
-
-```swift
-    let suspectCountries = Set(["CX", "EC"])
-    guard let cc = GeoLite2CountryDatabase( from: someFileUrlWhereTheDatabaseLives) else {
-        // do something, you don't have a readable country code database.
-    }
-    
-    if let isoCode = cc.countryCode("199.217.175.1"), suspectCountries.contains(isoCode) {
-        // do additional checks for these people that may live on islands named after holidays.
-    }
-}
-```
-
-If you are just testing IP addresses for their country of origin, then
-you really only need the `.countryCode` method. If you would like to also
-know their continent and have access to localized strings for several 
-languages then you will want to use the `.search(address:String)` method.
-
-If you want to know more, then you will need a more complete database than I 
-am using and to use the `MMDB` layer instead of the `GeoLite2CountryDatabase`
-layer, but it isn't hard. Just feed addresses into its `.search` method.
+for mapping IP addresses to countries or cities, within memory constrained 
+environments.
 
 ## What does it provide?
 
-- Once your MMDB constructor returns the database, there will be no I/O 
-  done. No disk reading (unless you are swapping) and no network access.
+- Once your MMDB constructor returns the database. The whole file is not 
+  read into memory, but parsed just in time as required. There are no 
+  network requests outputted from this library.
 - No amount of corrupted database file will allow it to access outside
   its own bytes. (I reengineered away from 'unsafe' to guarantee this.)
 - It is possible to create a database file which will recurse beyond any 
@@ -58,15 +37,13 @@ formats that comply with the MMDB specification.
 
 ## How feature-complete is this?
 
-This version "passes" all of the MaxMind "good" tests. It doesn't explode on any of the
-"bad-data" tests for corrupted databases, but many of those are corrupted in more than
-one way and this code bails out reading the metadata so we don't actually test what was
-intended.
+> Most of the bad-data tests are commented out due to migrating to memory mapping read.
+> It is planned to remediate this in an upcoming change.
+
+This version "passes" all of the MaxMind "good" tests.
 
 ## What could go wrong?
 
-- There are failure tests currently commented out due to failing from the move from
-  full file load to memory mapping. It is planned to remediate this.
 - It is possible to create a database file which will recurse beyond any 
   stack you might have. I do not have a limiter. Use a database you trust.
 - It is possible to generate an arithmetic exception from a corrupt database.
