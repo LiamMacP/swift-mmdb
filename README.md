@@ -3,8 +3,6 @@
 A native swift library for reading MMDB files, which include GeoLite2 files 
 for mapping IP addresses to countries or cities.
 
-
-
 ## How can you use this?
 
 ```swift
@@ -13,7 +11,7 @@ for mapping IP addresses to countries or cities.
         // do something, you don't have a readable country code database.
     }
     
-    if let isoCode = cc.countryCode("199.217.175.1"), suspectCountries.contains( isoCode) {
+    if let isoCode = cc.countryCode("199.217.175.1"), suspectCountries.contains(isoCode) {
         // do additional checks for these people that may live on islands named after holidays.
     }
 }
@@ -38,8 +36,6 @@ layer, but it isn't hard. Just feed addresses into its `.search` method.
   stack you might have. I do not have a limiter. Use a database you trust.
 - IP lookups take 200-300µS on the original M1 Mac Mini. That's fast enough
   for me, for now. 
-  
-
 
 ## Building
 
@@ -69,6 +65,8 @@ intended.
 
 ## What could go wrong?
 
+- There are failure tests currently commented out due to failing from the move from
+  full file load to memory mapping. It is planned to remediate this.
 - It is possible to create a database file which will recurse beyond any 
   stack you might have. I do not have a limiter. Use a database you trust.
 - It is possible to generate an arithmetic exception from a corrupt database.
