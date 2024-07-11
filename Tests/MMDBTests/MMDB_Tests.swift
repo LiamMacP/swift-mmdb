@@ -4,8 +4,7 @@ import XCTest
 final class MMDB_Tests: XCTestCase {
     func readAllAcceptErrors( forResource: String, withExtension: String = "mmdb", subdirectory: String) {
         guard let fileUrl = Bundle.module.url(forResource: forResource, withExtension: withExtension, subdirectory: subdirectory),
-              let data = try? Data(contentsOf: fileUrl, options: .alwaysMapped),
-              let mmdb = try? MMDB(data: data) else {
+              let mmdb = try? MMDB(fileUrl: fileUrl) else {
             XCTFail("Failed to open MMDB")
             return
         }
@@ -29,8 +28,7 @@ final class MMDB_Tests: XCTestCase {
 
     func readAll( forResource: String, withExtension: String = "mmdb", subdirectory: String) {
         guard let fileUrl = Bundle.module.url(forResource: forResource, withExtension: withExtension, subdirectory: subdirectory),
-              let data = try? Data(contentsOf: fileUrl, options: .alwaysMapped),
-              let mmdb = try? MMDB(data: data) else {
+              let mmdb = try? MMDB(fileUrl: fileUrl) else {
             XCTFail("Failed to open MMDB")
             return
         }
@@ -56,8 +54,7 @@ final class MMDB_Tests: XCTestCase {
             return
         }
         
-        guard let data = try? Data(contentsOf: fileUrl, options: .alwaysMapped),
-              let mmdb = try? MMDB(data: data) else {
+        guard let mmdb = try? MMDB(fileUrl: fileUrl) else {
             XCTFail("Failed to open MMDB")
             return
         }

@@ -7,8 +7,9 @@ public class MMDB {
     private let decoder: Decoder
     private(set) lazy var ipv4Root: UInt = computeIPv4Root()
     
-    public init(data: Data) throws {
-        self.databaseData = data
+    public init(fileUrl: URL) throws {
+        self.databaseData = try Data(contentsOf: fileUrl, options: .alwaysMapped)
+        
         self.metadata = try Metadata(databaseData)
         self.decoder = Decoder(data: databaseData)
     }
