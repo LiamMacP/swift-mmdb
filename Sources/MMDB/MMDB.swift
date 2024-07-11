@@ -3,11 +3,11 @@ import Foundation
 
 public class MMDB {
     private let databaseData: Data
-    private let metadata: Metadata
+    let metadata: Metadata
     private let decoder: Decoder
     private(set) lazy var ipv4Root: UInt = computeIPv4Root()
     
-    public init(from data: Data) throws {
+    public init(data: Data) throws {
         self.databaseData = data
         self.metadata = try Metadata(databaseData)
         self.decoder = Decoder(data: databaseData)
@@ -210,7 +210,7 @@ public class MMDB {
     func node6(_ number: UInt, side: UInt) throws -> UInt {
         let bytesToRead = 3
         let base = side == 0 ? Int(number * 6) : Int(number * 6) + bytesToRead
-        return UInt(Decoder.decodeUInt32(from: databaseData[base..<bytesToRead]))
+        return UInt(Decoder.decodeUInt32(from: databaseData[base..<base+bytesToRead]))
     }
     
     func node7(_ number: UInt, side: UInt) throws -> UInt {
@@ -221,7 +221,7 @@ public class MMDB {
         let relevantMiddleBits = side == 0 ? middle >> 4 : middle & 0x0f
         var bytes = databaseData[base..<base+bytesToRead]
         bytes.insert(relevantMiddleBits, at: bytes.indices.startIndex)
-        return (UInt(Decoder.decodeUInt32(from: bytes)))
+        return UInt(Decoder.decodeUInt32(from: bytes))
     }
     
     func node8(_ number: UInt, side: UInt) throws -> UInt {

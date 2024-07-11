@@ -17,13 +17,14 @@ let someIPv4Addresses = [ "2.125.160.216",
 
 final class MMDB_Tests: XCTestCase {
     func readAllAcceptErrors( forResource: String, withExtension: String = "mmdb", subdirectory: String) {
-        guard let fileURL = Bundle.module.url(forResource: forResource, withExtension: withExtension, subdirectory: subdirectory),
-              let mmdb = MMDB(from: fileURL) else {
+        guard let fileUrl = Bundle.module.url(forResource: forResource, withExtension: withExtension, subdirectory: subdirectory),
+              let data = try? Data(contentsOf: fileUrl, options: .alwaysMapped),
+              let mmdb = try? MMDB(data: data) else {
             XCTFail("Failed to open MMDB")
             return
         }
 
-        mmdb.enumerate{ (bits:[UInt32], count: Int) in
+        try? mmdb.enumerate{ (bits:[UInt32], count: Int) in
             let hex = bits.reduce("") { $0 +  String(format:"%08x", $1) }
             print( "\(hex)/\(count)" )
             
@@ -41,13 +42,14 @@ final class MMDB_Tests: XCTestCase {
     }
 
     func readAll( forResource: String, withExtension: String = "mmdb", subdirectory: String) {
-        guard let fileURL = Bundle.module.url(forResource: forResource, withExtension: withExtension, subdirectory: subdirectory),
-              let mmdb = MMDB(from: fileURL) else {
+        guard let fileUrl = Bundle.module.url(forResource: forResource, withExtension: withExtension, subdirectory: subdirectory),
+              let data = try? Data(contentsOf: fileUrl, options: .alwaysMapped),
+              let mmdb = try? MMDB(data: data) else {
             XCTFail("Failed to open MMDB")
             return
         }
         
-        mmdb.enumerate{ (bits:[UInt32], count: Int) in
+        try? mmdb.enumerate{ (bits:[UInt32], count: Int) in
             let hex = bits.reduce("") { $0 +  String(format:"%08x", $1) }
             print( "\(hex)/\(count)" )
             
@@ -63,12 +65,13 @@ final class MMDB_Tests: XCTestCase {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct
         // results.
-        guard let fileURL = Bundle.module.url(forResource: "GeoIP2-Country-Test", withExtension: "mmdb", subdirectory: "test-data") else {
+        guard let fileUrl = Bundle.module.url(forResource: "GeoIP2-Country-Test", withExtension: "mmdb", subdirectory: "test-data") else {
             XCTFail("Unable to find test GeoIP2-Country-Test.mmdb file.")
             return
         }
         
-        guard let mmdb = MMDB(from: fileURL) else {
+        guard let data = try? Data(contentsOf: fileUrl, options: .alwaysMapped),
+              let mmdb = try? MMDB(data: data) else {
             XCTFail("Failed to open MMDB")
             return
         }
